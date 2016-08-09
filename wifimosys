@@ -15,7 +15,7 @@ clear
 ##################################### Configuración general del script
 
 revision=12
-version=0.13
+version=0.14
 IP=192.168.1.1
 RUTATEMP="/tmp/Wifimosys"
 RUTAHANDSHAKE="/root/handshakes"
