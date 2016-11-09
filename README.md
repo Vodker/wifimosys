@@ -1,4 +1,4 @@
-﻿# wifimosys 0.16
+﻿# wifimosys 0.17
 Ataque EVIL TWIN
 
 WIFIMOSYS (WIFI MOron's SYStem es un clon de LINSET (del gran vk496) con algunas modificaciones.
