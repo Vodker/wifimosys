@@ -460,21 +460,23 @@ function selection {
 	echo
 	echo -e "          "$red"("$white"*"$red")"$white" En rojo: redes con posibles clientes activos"$transparent""
 	echo
-	echo -e $yellow"          Selecciona el nº de la red a atacar.$grey Para salir pulsa$red x$transparent"
+	echo -e $yellow"          Selecciona el nº de la red a atacar...$transparent"
+	echo -e $grey"          (Para reescanear pulsa$red r$grey Para salir pulsa$red x$transparent)"
 	echo
 	echo -n "          #> "
-	read choice
+	read redwifi
 
-	if [[ $choice -eq "x" ]]; then
-	exitmode; break
-	fi
-	
-	idlenght=${aidlenght[$choice]}
-	ssid=${assid[$choice]}
-	channel=$(echo ${achannel[$choice]}|tr -d [:space:])
-	mac=${amac[$choice]}
-	privacy=${aprivacy[$choice]}
-	speed=${aspeed[$choice]}
+	case $redwifi in
+			r ) limpieza ;;
+			x ) exitmode; break ;;
+	esac
+
+	idlenght=${aidlenght[$redwifi]}
+	ssid=${assid[$redwifi]}
+	channel=$(echo ${achannel[$redwifi]}|tr -d [:space:])
+	mac=${amac[$redwifi]}
+	privacy=${aprivacy[$redwifi]}
+	speed=${aspeed[$redwifi]}
 	Host_IDL=$idlength
 	Host_SPEED=$speed
 	Host_ENC=$privacy
