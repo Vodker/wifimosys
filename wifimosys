@@ -119,8 +119,10 @@ function exitmode {
 	  echo -e $yellow"          Gracias por usar Wifimosys."$color
 	  echo
 	fi
-	if [ "$CCHAN" == "cambiado" ]; then kill 0; fi
-	exit
+	if [ "$CCHAN" == "cambiado" ] || [ "$CCHAN1" == "cambiado" ]; then
+	kill 0
+	else exit
+	fi
 }
 
 ##################################### Cabecera
@@ -854,7 +856,7 @@ function ataque2 {
 	echo -n '          #> '
 	read enataque
 	case $enataque in
-		1 ) matartodo; exitmode; break;;
+		1 ) CCHAN1="cambiado"; matartodo; exitmode;;
 		* ) clear;;
 	esac
 }
