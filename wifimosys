@@ -118,9 +118,9 @@ function exitmode {
 	  echo
 	  echo -e $yellow"          Gracias por usar Wifimosys."$color
 	  echo
-	  echo -en "\e[3J"
 	fi
-	exit & kill 0
+	if [ "$CCHAN" == "cambiado" ]; then kill 0; fi
+	exit
 }
 
 ##################################### Cabecera
