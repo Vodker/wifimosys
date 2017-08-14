@@ -2,7 +2,7 @@
 
 ##################################### Ajustes generales
 
-version=0.23
+version=0.24
 RUTATEMP="/tmp/Wifimosys"
 RUTAHANDSHAKE="/root/handshakes"
 RUTAPASS="/root/pwlog"
@@ -22,7 +22,6 @@ VENTFDNS="-geometry 80x20+0-0"
 VENTESPE="-geometry 95x30-0+0"
 VENTDHCP="-geometry 90x20+0+0"
 export wifim_output_device=/dev/null
-HOLD=""
 trap exitmode SIGINT SIGHUP
 
 ##################################### Mata todos los procesos
@@ -36,45 +35,29 @@ function exitmode {
 	echo -e $yellow"          Limpiando y cerrando..."$color
 	echo
 
-	if ps -A | grep -q airbase-ng; then
-		echo -e $white"          Finalizando "$green"airbase-ng"$color
-		killall airbase-ng &>$wifim_output_device
-	fi
+	if ps -A | grep -q airbase-ng; then echo -e $white"          Finalizando "$green"airbase-ng"$color
+	killall airbase-ng &>$wifim_output_device; fi
 	
-	if ps -A | grep -q airodump-ng; then
-		echo -e $white"          Finalizando "$green"airodump-ng"$color
-		killall airodump-ng &>$wifim_output_device
-	fi
+	if ps -A | grep -q airodump-ng; then echo -e $white"          Finalizando "$green"airodump-ng"$color
+	killall airodump-ng &>$wifim_output_device; fi
 
-	if ps -A | grep python| grep fakedns; then
-		echo -e $white"          Finalizando "$green"python"$color
-		kill $(ps a | grep python| grep fakedns | awk '{print $1}') &>$wifim_output_device
-	fi
+	if ps -A | grep python| grep fakedns; then echo -e $white"          Finalizando "$green"python"$color
+	kill $(ps a | grep python| grep fakedns | awk '{print $1}') &>$wifim_output_device; fi
 
-	if ps -A | grep -q hostapd; then
-		echo -e $white"          Finalizando "$green"hostapd"$color
-		killall hostapd &>$wifim_output_device
-	fi
+	if ps -A | grep -q hostapd; then echo -e $white"          Finalizando "$green"hostapd"$color
+	killall hostapd &>$wifim_output_device; fi
 
-	if ps -A | grep -q lighttpd; then
-		echo -e $white"          Finalizando "$green"lighttpd"$color
-		killall lighttpd &>$wifim_output_device
-	fi
+	if ps -A | grep -q lighttpd; then echo -e $white"          Finalizando "$green"lighttpd"$color
+	killall lighttpd &>$wifim_output_device; fi
 
-	if ps -A | grep -q dhcpd; then
-		echo -e $white"          Finalizando "$green"dhcpd"$color
-		killall dhcpd &>$wifim_output_device
-	fi
+	if ps -A | grep -q dhcpd; then echo -e $white"          Finalizando "$green"dhcpd"$color
+	killall dhcpd &>$wifim_output_device; fi
 	
-	if ps -A | grep -q mdk3; then
-		echo -e $white"          Finalizando "$green"mdk3"$color
-		killall mdk3 &>$wifim_output_device
-	fi
+	if ps -A | grep -q mdk3; then echo -e $white"          Finalizando "$green"mdk3"$color
+	killall mdk3 &>$wifim_output_device; fi
 
-	if [ "$(cat /proc/sys/net/ipv4/ip_forward)" != "0" ]; then
-		echo -e $white"          Deshabilitando "$green"reenvio de paquetes"$color
-		sysctl -w net.ipv4.ip_forward=0 &>$wifim_output_device
-	fi
+	if [ "$(cat /proc/sys/net/ipv4/ip_forward)" != "0" ]; then echo -e $white"          Deshabilitando "$green"reenvio de paquetes"$color
+	sysctl -w net.ipv4.ip_forward=0 &>$wifim_output_device; fi
 
 	echo -e $white"          Limpiando "$green"iptables"$color
 	
@@ -86,15 +69,11 @@ function exitmode {
 	echo -e $white"          Restaurando "$green"tput"$color
 	tput cnorm
 
-	if [ "$WIFI" != "" ]; then
-		echo -e $white"          Deshabilitando interfaz "$green"$WIFI"$color
-		airmon-ng stop $WIFI &> $wifim_output_device
-	fi
+	if [ "$WIFI" != "" ]; then echo -e $white"          Deshabilitando interfaz "$green"$WIFI"$color
+	airmon-ng stop $WIFI &> $wifim_output_device; fi
 	
-	if [ "$WIFI_MONITOR" != "" ]; then
-		echo -e $white"          Deshabilitando interfaz de monitoreo "$green"$WIFI_MONITOR"$color
-		airmon-ng stop $WIFI_MONITOR &> $wifim_output_device
-	fi
+	if [ "$WIFI_MONITOR" != "" ]; then echo -e $white"          Deshabilitando interfaz de monitoreo "$green"$WIFI_MONITOR"$color
+	airmon-ng stop $WIFI_MONITOR &> $wifim_output_device; fi
 	
 	echo -e $color"          Reiniciando "$green"Network Manager"$color
 	echo -n "          " & /etc/rc.d/rc.networkmanager start
@@ -103,6 +82,7 @@ function exitmode {
 	rm -R $RUTATEMP/* &>$wifim_output_device
 
 	contra=/opt/Wireless-Keys/$Host_SSID-Wifimosys.txt
+	
 	if [ -e $contra ]; then
 	  top
 	  paplay "/usr/share/sounds/KDE-Sys-App-Positive.ogg"
@@ -119,6 +99,7 @@ function exitmode {
 	  echo -e $yellow"          Gracias por usar Wifimosys."$color
 	  echo
 	fi
+	
 	if [ "$CCHAN" == "cambiado" ] || [ "$CCHAN1" == "cambiado" ]; then
 	kill 0
 	else exit
@@ -133,8 +114,8 @@ clear && echo -en "\e[3J"
 echo
 echo -e "$green	  ##########################################################"
 echo -e "$green	  #                                                        #"
-echo -e "$green	  #${yellow}	         WIFIMOSYS $version"" ${green}by ${yellow}Absolut Vodker""$green          #"
-echo -e "$green	  #${yellow}	                WIFI" "MO""${green}ron'" "${yellow}SYS""${green}tem""                 #"
+echo -e "$green	  #${yellow}	       WIFIMOSYS $version"" ${green}by ${yellow}Absolut Vodker""$green            #"
+echo -e "$green	  #${yellow}	              WIFI" "MO""${green}ron'" "${yellow}SYS""${green}tem""                   #"
 echo -e "$green	  #                                                        #"
 echo -e "$green	  #  Basado en LINSET de vk496 para seguridadwireless.net  ${green}#"
 echo -e "$green	  #                                                        #"
@@ -230,7 +211,7 @@ function setinterface {
 	fi
 }
 
-function ponemonitor {
+function ponemonitor { ############### Reparado por USUARIONUEVO
 
 	if [ $(echo "$PREWIFI" | wc -m) -le 3 ]; then
 		clear
@@ -240,20 +221,22 @@ function ponemonitor {
 
 	readarray -t softwaremolesto < <(airmon-ng check $PREWIFI | tail -n +8 | grep -v "on interface" | awk '{ print $2 }')
 	WIFIDRIVER=$(airmon-ng | grep "$PREWIFI" | awk '{print($(NF-2))}')
-	rmmod -f "$WIFIDRIVER" &>$wifim_output_device 2>&1
 
 	for molesto in "${softwaremolesto[@]}"; do
 		killall "$molesto" &>$wifim_output_device
 	done
-
+	
+	echo
+	echo -ne $white"          Poniendo el interface $yellow$PREWIFI$color en modo Monitor..."
+	
+	rmmod -f "$WIFIDRIVER" &>$wifim_output_device 2>&1
+	sleep 3
 	modprobe "$WIFIDRIVER" &>$wifim_output_device 2>&1
-
+	
 	select PREWIFI in $INTERFACES; do
 		break;
 	done
 
-	echo
-	echo -ne $white"          Poniendo el interface $yellow$PREWIFI$color en modo Monitor..."
 	WIFIMONITOR=$(airmon-ng start $PREWIFI | grep "enabled on" | cut -d " " -f 5 | cut -d ")" -f 1)
 	WIFI_MONITOR=$WIFIMONITOR
 	WIFI=$PREWIFI
@@ -418,6 +401,7 @@ function seleccionared {
 	acouper=${#ssid}
 	fin=$(($acouper-idlength))
 	Host_SSID=${ssid:1:fin}
+	
 	if [[ "$Host_SSID" == *"--Red_Oculta--"* ]] ; then Host_SSID=""
 	msgOculta="Red Oculta, se intentará averiguar su nombre."
 	fi
