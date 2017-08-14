@@ -354,7 +354,7 @@ function seleccionared {
 			ESSID="$grey --Red_Oculta--"
 			POWER="-129"
 		fi
-		if [ $largomac -ge 17 ] && [ "$PRIVACY" != "OPN" ] && [ $CHANNEL -ge 1 ]; then
+		if [ $largomac -ge "17" ] && [ "$PRIVACY" != "OPN" ] && [ $CHANNEL -ge "1" ]; then
 			i=$(($i+1))
 			POWER=`expr $POWER + 130`
 			CLIENTE=`cat $RUTATEMP/clientes.csv | grep $MAC`
