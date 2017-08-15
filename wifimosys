@@ -100,8 +100,9 @@ function exitmode {
 	  echo
 	fi
 	
-	kill 0
-	exit
+	  kill 0
+	  exit
+
 }
 
 ##################################### Cabecera
@@ -224,11 +225,10 @@ function ponemonitor { ############### Reparado por USUARIONUEVO
 		killall "$molesto" &>$wifim_output_device
 	done
 	
-	echo
-	echo -ne $white"          Poniendo el interface $yellow$PREWIFI$color en modo Monitor..."
-	
 	rmmod -f "$WIFIDRIVER" &>$wifim_output_device 2>&1
 	sleep 3
+	echo
+	echo -ne $white"          Poniendo el interface $yellow$PREWIFI$color en modo Monitor..."
 	modprobe "$WIFIDRIVER" &>$wifim_output_device 2>&1
 	
 	select PREWIFI in $INTERFACES; do
@@ -345,14 +345,14 @@ function seleccionared {
 	i=0
 
 	while IFS=, read MAC FTS LTS CHANNEL SPEED PRIVACY CYPHER AUTH POWER BEACON IV LANIP IDLENGTH ESSID KEY;do
-		largomac=${#MAC}
 		PRIVACY=$(echo $PRIVACY| tr -d "^ ")
 		PRIVACY=${PRIVACY:0:4}
 		if [ "$ESSID" == " " ] || [[ "$ESSID" == *"x00"* ]] || [ "$POWER" == "-1" ]; then
 			ESSID="$grey --Red_Oculta--"
 			POWER="-129"
 		fi
-		if [ $largomac -ge "17" ] && [ "$PRIVACY" != "OPN" ] && [ $CHANNEL -ge "1" ]; then
+
+		if [ ${#MAC} -ge "17" ] && [ "$PRIVACY" != "OPN" ] && [ $CHANNEL -ge "1" ]; then
 			i=$(($i+1))
 			POWER=`expr $POWER + 130`
 			CLIENTE=`cat $RUTATEMP/clientes.csv | grep $MAC`
