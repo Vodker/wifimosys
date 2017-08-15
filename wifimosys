@@ -100,9 +100,11 @@ function exitmode {
 	  echo
 	fi
 	
-	  kill 0
-	  exit
-
+	if [ "$CCHAN" == "cambiado" ] || [ "$CCHAN1" == "cambiado" ]; then
+	kill 0
+	else
+	exit
+	fi
 }
 
 ##################################### Cabecera
@@ -225,10 +227,11 @@ function ponemonitor { ############### Reparado por USUARIONUEVO
 		killall "$molesto" &>$wifim_output_device
 	done
 	
-	rmmod -f "$WIFIDRIVER" &>$wifim_output_device 2>&1
-	sleep 3
 	echo
 	echo -ne $white"          Poniendo el interface $yellow$PREWIFI$color en modo Monitor..."
+	
+	rmmod -f "$WIFIDRIVER" &>$wifim_output_device 2>&1
+	sleep 3
 	modprobe "$WIFIDRIVER" &>$wifim_output_device 2>&1
 	
 	select PREWIFI in $INTERFACES; do
@@ -351,8 +354,7 @@ function seleccionared {
 			ESSID="$grey --Red_Oculta--"
 			POWER="-129"
 		fi
-
-		if [ ${#MAC} -ge "17" ] && [ "$PRIVACY" != "OPN" ] && [ $CHANNEL -ge "1" ]; then
+		if [ "${#MAC}" -ge 17 ] && [ "$PRIVACY" != "OPN" ] && [ "$CHANNEL" -ge 1 ]; then
 			i=$(($i+1))
 			POWER=`expr $POWER + 130`
 			CLIENTE=`cat $RUTATEMP/clientes.csv | grep $MAC`
@@ -855,7 +857,7 @@ function monitoreo {
 	paplay "/usr/share/sounds/KDE-Sys-Warning.ogg"
 	CCHAN="cambiado"
 	msgCambiado="          Script finalizado. $Host_SSID ha cambiado su canal de $Host_CHAN a $Mon_CHAN"
-	matartodo; exitmode;
+	break & killall airodump-ng &>$wifim_output_device & matartodo; exitmode;
 	fi
 	done
 }
