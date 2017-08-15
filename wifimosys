@@ -100,10 +100,8 @@ function exitmode {
 	  echo
 	fi
 	
-	if [ "$CCHAN" == "cambiado" ] || [ "$CCHAN1" == "cambiado" ]; then
 	kill 0
-	else exit
-	fi
+	exit
 }
 
 ##################################### Cabecera
